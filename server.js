@@ -3,6 +3,7 @@ const { animals } = require('./data/animals.json');
 
 const app = express();
 
+// Filter by query search
 function filterByQuery(query, animalsArray) {
     let personalityTraitsArray = [];
     let filteredResults = animalsArray;
@@ -34,6 +35,13 @@ function filterByQuery(query, animalsArray) {
     return filteredResults;
 }
 
+// Find animal by id
+function findById(id, animalsArray) {
+    const result = animalsArray.filter(animal => animal.id === id)[0];
+    return result;
+}
+
+// Get all animals route
 app.get('/api/animals', (req, res) => {
     let results = animals;
 
@@ -42,6 +50,16 @@ app.get('/api/animals', (req, res) => {
     }
     
     res.json(results);
+});
+
+app.get('/api/animals/:id', (req, res) => {
+    const result = findById(req.params.id, animals);
+
+    if (result) {
+        res.json(result);
+    } else {
+        res.send(404);
+    }
 });
 
 const PORT = process.env.PORT || 3001;
