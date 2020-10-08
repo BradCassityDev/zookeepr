@@ -1,7 +1,16 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const { get } = require('http');
+const { join } = require('path');
 const { animals } = require('./data/animals.json');
 
 const app = express();
+
+// parse the incoming string or array of data
+app.use(express.urlencoded({extended: true}));
+// parse incoming JSON data
+app.use(express.json());
 
 // Filter by query search
 function filterByQuery(query, animalsArray) {
@@ -41,6 +50,34 @@ function findById(id, animalsArray) {
     return result;
 }
 
+// Validate new animal requests
+function validateAnimal(animal) {
+    if(!animal.name || typeof animal.name !== 'string') {
+        return false;
+    } 
+    if(!animal.species || typeof animal.species !== 'string') {
+        return false;
+    }
+    if(!animal.diet || typeof animal.diet !== 'string') {
+        return false;
+    }
+    if(!animal.personalityTraits || !Array.isArray(animal.personalityTraits)) {
+        return false;
+    }
+    return true;
+}
+
+// Create new animal
+function createNewAnimal(body, animalsArray) {
+    const animal = body;
+    animalsArray.push(animal);
+    fs.writeFileSync(
+        path.join(__dirname, './data/animals.json'),
+        JSON.stringify({animals: animalsArray}, null, 2)
+    );
+    return animal;
+}
+
 // Get all animals route
 app.get('/api/animals', (req, res) => {
     let results = animals;
@@ -52,6 +89,7 @@ app.get('/api/animals', (req, res) => {
     res.json(results);
 });
 
+// Get animals by id
 app.get('/api/animals/:id', (req, res) => {
     const result = findById(req.params.id, animals);
 
@@ -59,6 +97,19 @@ app.get('/api/animals/:id', (req, res) => {
         res.json(result);
     } else {
         res.send(404);
+    }
+});
+
+// Post new animals
+app.post('/api/animals', (req, res) => {
+    //console.log(req.body);
+    req.body.id = animals.length.toString();
+
+    if(!validateAnimal(req.body)) {
+        res.status(400).send('The animal is not properly formatted.');
+    } else {
+        const animal = createNewAnimal(req.body, animals);
+        res.json(animal);
     }
 });
 
